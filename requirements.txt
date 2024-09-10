@@ -1,4 +1,4 @@
 streamlit
 prophet
 scikit-learn
-pickle
+pandas
