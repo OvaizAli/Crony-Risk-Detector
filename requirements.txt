@@ -1,12 +1,5 @@
-scikit-learn
-streamlit
-pandas
-prophet
+streamlit==1.24.0
+pandas==2.0.2
+numpy==1.24.3
+prophet==1.1.2
 joblib
-
-
-
-
-
-
-
