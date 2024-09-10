@@ -1,2 +1,4 @@
 streamlit
 prophet
+sklearn
+pickle
