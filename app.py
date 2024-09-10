@@ -8,13 +8,13 @@ label_encoder = joblib.load('label_encoder.joblib')
 loaded_model = joblib.load('unified_prophet_model.joblib')
 
 # Streamlit app
-st.title('Transaction Anomaly Detection')
+st.title('Anomaly Detection with Prophet')
 
 # User input
 test_cashier_name = st.text_input('Cashier Name', 'Arif')
 test_date = st.date_input('Date', datetime.now())
-test_void_amount = st.number_input('Void Amount', min_value=0, value=5000)
-test_void_count = st.number_input('Void Count', min_value=0, value=10)
+test_void_amount = st.number_input('Void Amount', min_value=0.0, value=47.01)
+test_void_count = st.number_input('Void Count', min_value=0, value=2)
 
 # Button to trigger prediction
 if st.button('Predict'):
@@ -24,7 +24,7 @@ if st.button('Predict'):
         'Cashier Name': [test_cashier_name],
         'Void Amount': [test_void_amount],
         'Void Count': [test_void_count],
-        'Rolling Void Amount': [test_void_amount]
+        'Rolling Void Amount': [test_void_amount]  # Simplified for demo
     })
 
     # Convert 'Date' to the correct format
@@ -36,7 +36,7 @@ if st.button('Predict'):
     # Prepare the data for Prophet prediction
     test_data_prophet = test_data[['Date', 'Void Amount', 'Cashier Name Encoded', 'Void Count', 'Rolling Void Amount']].rename(columns={'Date': 'ds', 'Void Amount': 'y'})
 
-    # Convert 'ds' to datetime64[ns]
+    # Convert 'ds' to datetime64[ns] for Prophet
     test_data_prophet['ds'] = pd.to_datetime(test_data_prophet['ds'])
 
     # Create a DataFrame for Prophet prediction
@@ -53,14 +53,14 @@ if st.button('Predict'):
     # Detect anomalies
     anomalies = pd.merge(test_data_prophet, forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']], on='ds')
 
-    # Function to calculate anomaly probability
     def calculate_anomaly_probability(row):
-        if row['y'] < row['yhat_lower']:
-            return abs(row['y'] - row['yhat_lower']) / abs(row['yhat_upper'] - row['yhat_lower']) * 100
-        elif row['y'] > row['yhat_upper']:
-            return abs(row['y'] - row['yhat_upper']) / abs(row['yhat_upper'] - row['yhat_lower']) * 100
+        if row['y'] < row['yhat_lower']:  # Actual value is below lower bound
+            return min(abs(row['y'] - row['yhat_lower']) / abs(row['yhat_upper'] - row['yhat_lower']) * 100, 100)
+        elif row['y'] > row['yhat_upper']:  # Actual value is above upper bound
+            return min(abs(row['y'] - row['yhat_upper']) / abs(row['yhat_upper'] - row['yhat_lower']) * 100, 100)
         else:
-            return 0
+            return 0  # No anomaly
+
 
     anomalies['prob_anomaly'] = anomalies.apply(calculate_anomaly_probability, axis=1)
     anomalies['Cashier Name'] = label_encoder.inverse_transform(anomalies['Cashier Name Encoded'])
