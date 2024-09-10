@@ -1,70 +1,86 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import sklearn
+from sklearn.preprocessing import StandardScaler
 from datetime import datetime
 
-# Load the saved LabelEncoder and Prophet model
+
+# Load the saved model, label encoders, and scaler
+iso_forest = joblib.load('isolation_forest_model.joblib')
 label_encoder = joblib.load('label_encoder.joblib')
-loaded_model = joblib.load('unified_prophet_model.joblib')
+register_encoder = joblib.load('register_encoder.joblib')
+scaler = joblib.load('scaler.joblib')
 
-# Streamlit app
-st.title('Anomaly Detection with Prophet')
+# Streamlit app title
+st.title('Anomaly Detection for Void Transactions')
 
-# User input
+# User inputs for the transaction
 test_cashier_name = st.text_input('Cashier Name', 'Arif')
+test_register_id = st.number_input('Register ID', min_value=1, value=2)
 test_date = st.date_input('Date', datetime.now())
+test_total_amount = st.number_input('Total Amount', min_value=0.0, value=190.4)
+test_total_items = st.number_input('Total Items', min_value=1, value=28)
 test_void_amount = st.number_input('Void Amount', min_value=0.0, value=47.01)
 test_void_count = st.number_input('Void Count', min_value=0, value=2)
+test_return_amount = st.number_input('Return Amount', min_value=0.0, value=0.0)
+test_return_count = st.number_input('Return Count', min_value=0, value=0)
 
 # Button to trigger prediction
 if st.button('Predict'):
-    # Prepare the test data
-    test_data = pd.DataFrame({
-        'Date': [test_date],
-        'Cashier Name': [test_cashier_name],
-        'Void Amount': [test_void_amount],
-        'Void Count': [test_void_count],
-        'Rolling Void Amount': [test_void_amount]  # Simplified for demo
-    })
+    try:
+        # Ensure correct data types for each input
+        test_transaction = {
+            'Receipt#': [1],  # Assuming a placeholder value
+            'Total Amount': [float(test_total_amount)],  # Convert to float
+            'Total Items': [int(test_total_items)],  # Convert to integer
+            'Date': [pd.to_datetime(test_date)],  # Convert to datetime
+            'Void Count': [int(test_void_count)],  # Convert to integer
+            'Void Amount': [float(test_void_amount)],  # Convert to float
+            'Return Count': [int(test_return_count)],  # Convert to integer
+            'Return Amount': [float(test_return_amount)],  # Convert to float
+            'Cashier Name': [str(test_cashier_name)],  # Ensure string
+            'Register ID': [int(test_register_id)]  # Convert to integer
+        }
 
-    # Convert 'Date' to the correct format
-    test_data['Date'] = pd.to_datetime(test_data['Date']).dt.date
+        # Convert the dictionary to a DataFrame
+        test_data = pd.DataFrame(test_transaction)
 
-    # Encode the 'Cashier Name'
-    test_data['Cashier Name Encoded'] = label_encoder.transform(test_data['Cashier Name'])
+        # Prepare the rolling void features
+        test_data['7d_rolling_void_count'] = test_data['Void Count']  # Simplified for testing
+        test_data['7d_rolling_void_amount'] = test_data['Void Amount']  # Simplified for testing
 
-    # Prepare the data for Prophet prediction
-    test_data_prophet = test_data[['Date', 'Void Amount', 'Cashier Name Encoded', 'Void Count', 'Rolling Void Amount']].rename(columns={'Date': 'ds', 'Void Amount': 'y'})
+        # Create additional feature ratios
+        test_data['Void_to_Total_Amount_Ratio'] = test_data['Void Amount'] / test_data['Total Amount']
+        test_data['Void_to_Items_Ratio'] = test_data['Void Count'] / test_data['Total Items']
+        test_data['Return_to_Total_Amount_Ratio'] = test_data['Return Amount'] / test_data['Total Amount']
 
-    # Convert 'ds' to datetime64[ns] for Prophet
-    test_data_prophet['ds'] = pd.to_datetime(test_data_prophet['ds'])
+        # Encode the 'Cashier Name' and 'Register ID'
+        test_data['Cashier Name Encoded'] = label_encoder.transform(test_data['Cashier Name'])
+        test_data['Register ID Encoded'] = register_encoder.transform(test_data['Register ID'])
 
-    # Create a DataFrame for Prophet prediction
-    future = pd.DataFrame({
-        'ds': test_data_prophet['ds'],
-        'Cashier Name Encoded': test_data['Cashier Name Encoded'],
-        '7d_rolling_void_count': test_data_prophet['Void Count'],
-        '7d_rolling_void_amount': test_data_prophet['Rolling Void Amount']
-    })
+        # Select the relevant features for prediction
+        test_features = test_data[['Void Amount', '7d_rolling_void_count', '7d_rolling_void_amount', 
+                                   'Void_to_Total_Amount_Ratio', 'Void_to_Items_Ratio', 'Return_to_Total_Amount_Ratio', 
+                                   'Cashier Name Encoded', 'Register ID Encoded']]
 
-    # Make predictions
-    forecast = loaded_model.predict(future)
+        # Scale the features
+        scaled_test_features = scaler.transform(test_features)
 
-    # Detect anomalies
-    anomalies = pd.merge(test_data_prophet, forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']], on='ds')
+        # Predict using the Isolation Forest model
+        anomaly_score = iso_forest.predict(scaled_test_features)
 
-    def calculate_anomaly_probability(row):
-        if row['y'] < row['yhat_lower']:  # Actual value is below lower bound
-            return min(abs(row['y'] - row['yhat_lower']) / abs(row['yhat_upper'] - row['yhat_lower']) * 100, 100)
-        elif row['y'] > row['yhat_upper']:  # Actual value is above upper bound
-            return min(abs(row['y'] - row['yhat_upper']) / abs(row['yhat_upper'] - row['yhat_lower']) * 100, 100)
+        # Get the anomaly score (decision function)
+        anomaly_probability = iso_forest.decision_function(scaled_test_features)
+        probability_of_anomaly = 1 - (anomaly_probability[0] + 1) / 2  # Convert to a [0, 1] range
+
+        # Display the result
+        if anomaly_score[0] == -1:
+            st.write(f"Transaction is an anomaly.")
+            st.write(f"The probability of this transaction being an anomaly is {probability_of_anomaly * 100:.2f}%.")
         else:
-            return 0  # No anomaly
-
-
-    anomalies['prob_anomaly'] = anomalies.apply(calculate_anomaly_probability, axis=1)
-    anomalies['Cashier Name'] = label_encoder.inverse_transform(anomalies['Cashier Name Encoded'])
-
-    # Display the probability of anomaly
-    anomaly_probability = anomalies['prob_anomaly'].iloc[0]
-    st.write(f"The probability that this transaction is an anomaly is {anomaly_probability:.2f}%")
+            st.write(f"Transaction is normal.")
+            st.write(f"The probability of this transaction being an anomaly is {probability_of_anomaly * 100:.2f}%.")
+    
+    except Exception as e:
+        st.error(f"An error occurred: {e}")
