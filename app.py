@@ -21,7 +21,7 @@ cashier_names = df['Cashier Name'].unique().tolist()
 register_ids = df['Register ID'].unique().tolist()
 
 # Streamlit app title
-st.title('Anomaly Detection with Explainability')
+st.title('Anomaly Detection of Void Transactions')
 
 # User inputs for the transaction
 test_cashier_name = st.selectbox('Cashier Name', cashier_names)
