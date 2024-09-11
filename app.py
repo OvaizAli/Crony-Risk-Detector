@@ -46,13 +46,15 @@ def main():
                     f"• **Mean Return Amount**: \${return_amount_mean:.2f}"
                 )
 
-                # Create a new column to count how often each cashier exceeds the mean for any attribute
+                # Create a new column to count how often each attribute exceeds the mean
                 df['Exceeds Void Count'] = (df['Void Count'] > void_count_mean).astype(int)
                 df['Exceeds Void Amount'] = (df['Void Amount'] > void_amount_mean).astype(int)
                 df['Exceeds Return Count'] = (df['Return Count'] > return_count_mean).astype(int)
                 df['Exceeds Return Amount'] = (df['Return Amount'] > return_amount_mean).astype(int)
 
-                # Group by Cashier Name and count the number of transactions and risky counts
+                # 1. Calculate the Risk for Cashiers
+
+                # Group by Cashier Name and count the number of risky attributes
                 cashier_stats = df.groupby('Cashier Name').agg(
                     total_transactions=('Receipt#', 'count'),
                     exceeds_void_count=('Exceeds Void Count', 'sum'),
@@ -73,7 +75,7 @@ def main():
                 # Find the cashier with the highest normalized risk score
                 most_risky_cashier = cashier_stats.sort_values(by='Risk Score', ascending=False).iloc[0]
 
-                # Display the most risky cashier with risk details using markdown
+                # Display the most risky cashier with risk details
                 st.markdown(
                     f"**Most Risky Cashier**:  \n"
                     f"• **Cashier Name**: {most_risky_cashier['Cashier Name']}  \n"
@@ -84,6 +86,38 @@ def main():
                 # Display all cashier risk scores
                 st.success("Risk Scores for All Cashiers:")
                 st.dataframe(cashier_stats[['Cashier Name', 'total_transactions', 'Risk Score']])
+
+                # 2. Calculate the Risk for Receipts
+
+                # Group by Receipt# and count the number of risky attributes
+                receipt_stats = df.groupby('Receipt#').agg(
+                    exceeds_void_count=('Exceeds Void Count', 'sum'),
+                    exceeds_void_amount=('Exceeds Void Amount', 'sum'),
+                    exceeds_return_count=('Exceeds Return Count', 'sum'),
+                    exceeds_return_amount=('Exceeds Return Amount', 'sum')
+                ).reset_index()
+
+                # Calculate the risk score for each receipt
+                receipt_stats['Risk Score'] = (
+                    receipt_stats['exceeds_void_count'] + 
+                    receipt_stats['exceeds_void_amount'] + 
+                    receipt_stats['exceeds_return_count'] + 
+                    receipt_stats['exceeds_return_amount']
+                )
+
+                # Find the receipt with the highest risk score
+                most_risky_receipt = receipt_stats.sort_values(by='Risk Score', ascending=False).iloc[0]
+
+                # Display the most risky receipt number with risk details
+                st.markdown(
+                    f"**Most Risky Receipt**:  \n"
+                    f"• **Receipt Number**: {most_risky_receipt['Receipt#']}  \n"
+                    f"• **Risk Score**: {most_risky_receipt['Risk Score']}"
+                )
+
+                # Display all receipt risk scores
+                st.success("Risk Scores for All Receipts:")
+                st.dataframe(receipt_stats[['Receipt#', 'Risk Score']])
 
             else:
                 st.error("The file does not contain all the required columns.")
