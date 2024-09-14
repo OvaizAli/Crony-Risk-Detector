@@ -3,7 +3,7 @@ import pandas as pd
 
 # Define the Streamlit app
 def main():
-    st.title('Receipt Data Processor')
+    st.title('Crony Risk Detector')
 
     # Upload the file (supports CSV and Excel)
     uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xls", "xlsx"])
