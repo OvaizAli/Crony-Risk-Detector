@@ -125,11 +125,11 @@ def main():
                     most_risky_receipt = receipt_stats[receipt_stats['Risk Score'] == max_risk_score][['Receipt#', 'Risk Score']]
 
                     # Display receipt risk scores
-                    st.success("Risk Scores for Receipts (Overall):")
+                    st.success("Risk Scores for Top 10 Receipts (Overall):")
                     st.dataframe(receipt_stats[['Receipt#', 'Risk Score']].sort_values(by='Risk Score', ascending=False, ignore_index=True))
 
                     # Display the most risky receipt
-                    most_risky_receipt_numbers = most_risky_receipt['Receipt#'].tolist()
+                    most_risky_receipt_numbers = most_risky_receipt['Receipt#'][:10].tolist()
                     st.markdown(
                         f"**Most Risky Receipt Number(s)**:  \n"
                         f"• **Receipt Numbers**: {', '.join(map(str, most_risky_receipt_numbers))}  \n"
@@ -292,11 +292,11 @@ def main():
                     most_risky_receipt = receipt_stats[receipt_stats['Risk Score'] == max_risk_score][['Receipt#', 'Risk Score']]
 
                     # Display receipt risk scores
-                    st.success("Risk Scores for Receipts (Day-wise and Overall):")
+                    st.success("Risk Scores for Top 10 Receipts (Day-wise and Overall):")
                     st.dataframe(receipt_stats[['Receipt#', 'Risk Score']].sort_values(by='Risk Score', ascending=False, ignore_index=True))
 
                     # Display the most risky receipt
-                    most_risky_receipt_numbers = most_risky_receipt['Receipt#'].tolist()
+                    most_risky_receipt_numbers = most_risky_receipt['Receipt#'][:10].tolist()
                     st.markdown(
                         f"**Most Risky Receipt Number(s)**:  \n"
                         f"• **Receipt Numbers**: {', '.join(map(str, most_risky_receipt_numbers))}  \n"
