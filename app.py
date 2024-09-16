@@ -51,15 +51,32 @@ def main():
                     # Display the DataFrame with overall comparisons
                     st.dataframe(df)
 
-                    # Display calculated overall means
-                    st.markdown(
-                        f"• **Overall Mean Void Count**: {overall_void_count_mean:.2f}  \n"
-                        f"• **Overall Mean Void Amount**: \${overall_void_amount_mean:.2f}  \n"
-                        f"• **Overall Mean Return Count**: {overall_return_count_mean:.2f}  \n"
-                        f"• **Overall Mean Return Amount**: \${overall_return_amount_mean:.2f}  \n"
-                        f"• **Overall Mean Total Amount**: \${overall_total_amount_mean:.2f}  \n"
-                        f"• **Overall Mean Total Items**: {overall_total_items_mean:.2f}"
-                    )
+                                      # Create a DataFrame for overall means
+                    overall_means_data = {
+                        'Metric': [
+                            'Overall Mean Void Count',
+                            'Overall Mean Void Amount',
+                            'Overall Mean Return Count',
+                            'Overall Mean Return Amount',
+                            'Overall Mean Total Amount',
+                            'Overall Mean Total Items'
+                        ],
+                        'Value': [
+                            overall_void_count_mean,
+                            f"${overall_void_amount_mean:.2f}",
+                            overall_return_count_mean,
+                            f"${overall_return_amount_mean:.2f}",
+                            f"${overall_total_amount_mean:.2f}",
+                            overall_total_items_mean
+                        ]
+                    }
+
+                    overall_means_df = pd.DataFrame(overall_means_data)
+
+                    st.success("Overall Mean Calulations")
+
+                    # Display the DataFrame in Streamlit
+                    st.dataframe(overall_means_df)
 
                     # 2. Calculate Risk Scores for Cashiers
                     cashier_stats = df.groupby('Cashier Name').agg(
@@ -182,27 +199,36 @@ def main():
                     # Display the DataFrame with both day-wise and overall comparisons
                     st.dataframe(df)
 
-                    # Display calculated overall means
-                    st.markdown(
-                        f"• **Overall Mean Void Count**: {overall_void_count_mean:.2f}  \n"
-                        f"• **Overall Mean Void Amount**: \${overall_void_amount_mean:.2f}  \n"
-                        f"• **Overall Mean Return Count**: {overall_return_count_mean:.2f}  \n"
-                        f"• **Overall Mean Return Amount**: \${overall_return_amount_mean:.2f}  \n"
-                        f"• **Overall Mean Total Amount**: \${overall_total_amount_mean:.2f}  \n"
-                        f"• **Overall Mean Total Items**: {overall_total_items_mean:.2f}"
-                    )
+                    # Create a DataFrame for overall means
+                    overall_means_data = {
+                        'Metric': [
+                            'Overall Mean Void Count',
+                            'Overall Mean Void Amount',
+                            'Overall Mean Return Count',
+                            'Overall Mean Return Amount',
+                            'Overall Mean Total Amount',
+                            'Overall Mean Total Items'
+                        ],
+                        'Value': [
+                            overall_void_count_mean,
+                            f"${overall_void_amount_mean:.2f}",
+                            overall_return_count_mean,
+                            f"${overall_return_amount_mean:.2f}",
+                            f"${overall_total_amount_mean:.2f}",
+                            overall_total_items_mean
+                        ]
+                    }
 
-                    # Display day-wise means in markdown format
-                    for index, row in day_wise_means.iterrows():
-                        st.markdown(
-                            f"**Day**: {row['Day']}  \n"
-                            f"• **Mean Void Count**: {row['mean_void_count']:.2f}  \n"
-                            f"• **Mean Void Amount**: \${row['mean_void_amount']:.2f}  \n"
-                            f"• **Mean Return Count**: {row['mean_return_count']:.2f}  \n"
-                            f"• **Mean Return Amount**: \${row['mean_return_amount']:.2f}  \n"
-                            f"• **Mean Total Amount**: \${row['mean_total_amount']:.2f}  \n"
-                            f"• **Mean Total Items**: {row['mean_total_items']:.2f}"
-                        )
+                    overall_means_df = pd.DataFrame(overall_means_data)
+
+                    st.success("Overall Mean Calulations")
+
+                    # Display the DataFrame in Streamlit
+                    st.dataframe(overall_means_df)
+
+                    st.success("Day-Wise Mean Calulations")
+
+                    st.dataframe(day_wise_means)
 
                     # 4. Calculate Risk Scores for Cashiers
                     cashier_stats = df.groupby('Cashier Name').agg(
