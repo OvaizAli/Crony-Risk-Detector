@@ -128,21 +128,42 @@ def display_most_risky_cashier(cashier_risk_scores, day_wise=False):
 def display_most_risky_receipt(receipt_risk_scores, day_wise=False):
     max_risk_score = receipt_risk_scores['Risk Score'].max()
     most_risky_receipts = receipt_risk_scores[receipt_risk_scores['Risk Score'] == max_risk_score]
-    receipt_numbers = ', '.join(map(str, most_risky_receipts['Receipt#'].tolist()))
+
+    # Limit the displayed receipt numbers to 15
+    displayed_receipts = most_risky_receipts['Receipt#'].tolist()[:15]
+    total_receipts = len(most_risky_receipts)
+    
+    # Join the first 15 receipt numbers for display
+    receipt_numbers = ', '.join(map(str, displayed_receipts))
+
+    # Add a message for the remaining receipts if more than 15
+    additional_count = total_receipts - 15 if total_receipts > 15 else 0
 
     if day_wise:
-        st.error(
-            f"The receipt(s) with the highest risk score of **{max_risk_score:.2f}** is/are **Receipt Number(s): {receipt_numbers}**. "
-            f"This score is based on exceeding day-wise and time-of-day averages for void counts, void amounts, return counts, and return amounts. "
-            f"The risk score also considers receipts where the total transaction amount and total items were below day-wise and time-of-day averages. "
-            f"Additionally, these receipts exceeded or fell below overall averages for the same metrics, contributing to their risk."
+        message = (
+            f"The receipt(s) with the highest risk score of **{max_risk_score:.2f}** is/are **Receipt Number(s): {receipt_numbers}**"
         )
+        if additional_count > 0:
+            message += f", and **{additional_count}** others."
+
+        message += (
+            " This score is based on exceeding day-wise and time-of-day averages for void counts, void amounts, return counts, and return amounts."
+            " The risk score also considers receipts where the total transaction amount and total items were below day-wise and time-of-day averages."
+            " Additionally, these receipts exceeded or fell below overall averages for the same metrics, contributing to their risk."
+        )
+        st.error(message)
     else:
-        st.error(
-            f"The receipt(s) with the highest risk score of **{max_risk_score:.2f}** is/are **Receipt Number(s): {receipt_numbers}**. "
-            f"This score is based on exceeding overall averages for void counts, void amounts, return counts, and return amounts. "
-            f"These receipts also fell below overall averages for total transaction amounts and total items, contributing to the risk."
+        message = (
+            f"The receipt(s) with the highest risk score of **{max_risk_score:.2f}** is/are **Receipt Number(s): {receipt_numbers}**"
         )
+        if additional_count > 0:
+            message += f", and **{additional_count}** others."
+
+        message += (
+            " This score is based on exceeding overall averages for void counts, void amounts, return counts, and return amounts."
+            " These receipts also fell below overall averages for total transaction amounts and total items, contributing to the risk."
+        )
+        st.error(message)
 
 # Define the Streamlit app
 def main():
@@ -167,7 +188,7 @@ def main():
                 df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
 
                 if df['Date'].isnull().any():
-                    st.warning("Date timestamps could not be parsed, so day-wise analysis will be skipped.")
+                    st.warning("Date timestamps could not be parsed, so Day-wise and Time of Day-wise analysis will be skipped.")
                     df.drop(columns='Date', inplace=True)
 
                     overall_means = calculate_overall_means(df)
@@ -198,7 +219,7 @@ def main():
                     display_most_risky_receipt(receipt_risk_scores)
 
                 else:
-                    st.success("Risk Analysis for the Uploaded - Both day-wise and overall analysis.")
+                    st.success("Risk Analysis for the Uploaded - Day-wise, Time of Day-wise, and Overall analysis.")
                     df['Day'] = df['Date'].dt.day_name()
                     
                     # Categorize the time of day
