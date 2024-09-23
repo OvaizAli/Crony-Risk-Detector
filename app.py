@@ -167,7 +167,7 @@ def display_most_risky_receipt(receipt_risk_scores, day_wise=False):
 
 # Define the Streamlit app
 def main():
-    st.title('Crony Risk Detector')
+    st.title('Crony Risk Detector (Cashier, Receipt, Day, Time of Day)')
 
     uploaded_file = st.file_uploader("Upload a CSV or Excel file", type=["csv", "xls", "xlsx"])
 
